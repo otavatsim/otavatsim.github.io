@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VATSIM Radar with OTA Icons</title>
+  <title>VATSIM Radar Without Proxy</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -33,36 +33,38 @@
     let aircraftTrails = {};
     let trailPolylines = {};
 
+    const otaImage = 'plane_ota.png'; // OTA icon (yellow)
+    const defaultImage = 'plane_yellow.png'; // Everyone else (make sure you have this)
+
+    function createPlaneIcon(heading, isOTA) {
+      const image = isOTA ? otaImage : defaultImage;
+      return L.divIcon({
+        className: '',
+        html: `<div class="plane-icon" style="transform: rotate(${heading}deg); background-image: url('${image}')"></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      });
+    }
+
     function updateRadar() {
-      fetch('http://localhost:3000/vatsim') // Your proxy must be running
+      fetch('https://data.vatsim.net/v3/vatsim-data.json')
         .then(res => res.json())
         .then(data => {
           const activeCallsigns = {};
 
           data.pilots.forEach(pilot => {
             const { callsign, latitude, longitude, altitude, groundspeed, heading } = pilot;
-            if (!callsign || latitude == null || longitude == null) return;
+            if (!latitude || !longitude) return;
 
+            const isOTA = callsign.includes("OTA");
             const pos = [latitude, longitude];
             activeCallsigns[callsign] = true;
-            const rotation = heading || 0;
-
-            const isOTA = callsign.includes('OTA');
-            const iconUrl = isOTA ? 'plane_ota.png' : 'plane_yellow.png';
-
-            const icon = L.divIcon({
-              className: '',
-              html: `<div class="plane-icon" style="
-                background-image: url('${iconUrl}');
-                transform: rotate(${rotation}deg);"></div>`,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10]
-            });
-
+            const icon = createPlaneIcon(heading || 0, isOTA);
             const popupText = `${callsign}<br>Alt: ${altitude}ft<br>GS: ${groundspeed}kt`;
 
             if (!aircraftMarkers[callsign]) {
-              const marker = L.marker(pos, { icon }).addTo(map).bindPopup(popupText);
+              const marker = L.marker(pos, { icon }).addTo(map)
+                .bindPopup(popupText);
               aircraftMarkers[callsign] = marker;
               aircraftTrails[callsign] = [pos];
             } else {
@@ -79,12 +81,13 @@
             if (trailPolylines[callsign]) {
               trailPolylines[callsign].setLatLngs(aircraftTrails[callsign]);
             } else {
-              const polyline = L.polyline(aircraftTrails[callsign], { color: 'cyan' }).addTo(map);
-              trailPolylines[callsign] = polyline;
+              trailPolylines[callsign] = L.polyline(aircraftTrails[callsign], {
+                color: isOTA ? 'yellow' : 'cyan'
+              }).addTo(map);
             }
           });
 
-          // Remove planes no longer active
+          // Remove inactive aircraft
           for (const callsign in aircraftMarkers) {
             if (!activeCallsigns[callsign]) {
               map.removeLayer(aircraftMarkers[callsign]);
@@ -99,7 +102,7 @@
     }
 
     updateRadar();
-    setInterval(updateRadar, 1000); // Update every second
+    setInterval(updateRadar, 1000);
   </script>
 </body>
 </html>
