@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VATSIM Radar with Trails</title>
+  <title>VATSIM Radar with Trails (Proxy)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    body, html { margin:0; padding:0; height:100%; }
+    html, body { margin: 0; padding: 0; height: 100%; }
     #map { height: 100vh; }
   </style>
 </head>
@@ -15,7 +15,7 @@
   <script>
     const map = L.map('map').setView([50, 0], 4);
 
-    // Dark map style
+    // Dark tile style
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
       maxZoom: 19
@@ -26,14 +26,14 @@
     let trailPolylines = {};
 
     function updateRadar() {
-      fetch('https://data.vatsim.net/v3/vatsim-data.json')
+      fetch('http://localhost:3000/vatsim') // ← your proxy URL
         .then(res => res.json())
         .then(data => {
           const activeCallsigns = {};
 
           data.pilots.forEach(pilot => {
             const { callsign, latitude, longitude, altitude } = pilot;
-            if (!latitude || !longitude) return; // Skip broken data
+            if (!latitude || !longitude) return;
 
             const pos = [latitude, longitude];
             activeCallsigns[callsign] = true;
@@ -62,7 +62,7 @@
             }
           });
 
-          // Remove aircraft that disconnected
+          // Remove disconnected planes
           for (const callsign in aircraftMarkers) {
             if (!activeCallsigns[callsign]) {
               map.removeLayer(aircraftMarkers[callsign]);
@@ -72,7 +72,8 @@
               delete trailPolylines[callsign];
             }
           }
-        });
+        })
+        .catch(err => console.error("Fetch error:", err));
     }
 
     updateRadar();
