@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VATSIM Radar with Trails (Custom PNG)</title>
+  <title>VATSIM Radar with Trails (No Waypoint Icons)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -11,7 +11,7 @@
     .plane-icon {
       width: 32px;
       height: 32px;
-      background-image: url('image-removebg-preview (8).png');
+      background-image: url('plane.png'); /* Use your plane.png image here */
       background-size: contain;
       background-repeat: no-repeat;
       transform-origin: center center;
@@ -35,7 +35,7 @@
     let trailPolylines = {};
 
     function updateRadar() {
-      fetch('http://localhost:3000/vatsim') // ← your proxy URL
+      fetch('http://localhost:3000/vatsim') // your proxy URL
         .then(res => res.json())
         .then(data => {
           const activeCallsigns = {};
@@ -43,7 +43,6 @@
           data.pilots.forEach(pilot => {
             const { callsign, latitude, longitude, altitude, groundspeed, heading } = pilot;
 
-            // Limit to Europe-ish area
             if (!latitude || !longitude) return;
             if (latitude < 30 || latitude > 70 || longitude < -30 || longitude > 50) return;
 
@@ -72,7 +71,7 @@
               aircraftMarkers[callsign].setPopupContent(popupText);
 
               aircraftTrails[callsign].push(pos);
-              if (aircraftTrails[callsign].length > 30) {
+              if (aircraftTrails[callsign].length > 1000) {
                 aircraftTrails[callsign].shift();
               }
             }
@@ -85,7 +84,6 @@
             }
           });
 
-          // Remove disconnected aircraft
           for (const callsign in aircraftMarkers) {
             if (!activeCallsigns[callsign]) {
               map.removeLayer(aircraftMarkers[callsign]);
@@ -100,7 +98,7 @@
     }
 
     updateRadar();
-    setInterval(updateRadar, 1000); // every second
+    setInterval(updateRadar, 1000);
   </script>
 </body>
 </html>
