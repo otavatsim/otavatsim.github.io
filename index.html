@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VATSIM Radar with Trails (No Waypoint Icons)</title>
+  <title>VATSIM Radar with Smaller Plane Icons (OTA only)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -9,9 +9,9 @@
     #map { height: 100vh; }
 
     .plane-icon {
-      width: 32px;
-      height: 32px;
-      background-image: url('plane.png'); /* Use your plane.png image here */
+      width: 20px;
+      height: 20px;
+      background-image: url('plane.png'); /* Your plane image file */
       background-size: contain;
       background-repeat: no-repeat;
       transform-origin: center center;
@@ -23,7 +23,7 @@
   <div id="map"></div>
 
   <script>
-    const map = L.map('map').setView([50, 0], 4);
+    const map = L.map('map').setView([20, 0], 2);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
@@ -35,7 +35,7 @@
     let trailPolylines = {};
 
     function updateRadar() {
-      fetch('http://localhost:3000/vatsim') // your proxy URL
+      fetch('http://localhost:3000/vatsim') // Your proxy URL
         .then(res => res.json())
         .then(data => {
           const activeCallsigns = {};
@@ -43,8 +43,8 @@
           data.pilots.forEach(pilot => {
             const { callsign, latitude, longitude, altitude, groundspeed, heading } = pilot;
 
-            if (!latitude || !longitude) return;
-            if (latitude < 30 || latitude > 70 || longitude < -30 || longitude > 50) return;
+            if (!callsign || !callsign.includes("OTA")) return; // Only OTA callsigns
+            if (!latitude || !longitude) return; // Skip invalid
 
             const pos = [latitude, longitude];
             activeCallsigns[callsign] = true;
@@ -54,8 +54,8 @@
             const icon = L.divIcon({
               className: '',
               html: `<div class="plane-icon" style="transform: rotate(${rotation}deg);"></div>`,
-              iconSize: [32, 32],
-              iconAnchor: [16, 16]
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
             });
 
             const popupText = `${callsign}<br>Alt: ${altitude}ft<br>GS: ${groundspeed}kt`;
@@ -84,6 +84,7 @@
             }
           });
 
+          // Remove planes no longer active
           for (const callsign in aircraftMarkers) {
             if (!activeCallsigns[callsign]) {
               map.removeLayer(aircraftMarkers[callsign]);
@@ -98,7 +99,7 @@
     }
 
     updateRadar();
-    setInterval(updateRadar, 1000);
+    setInterval(updateRadar, 1000); // Update every second
   </script>
 </body>
 </html>
