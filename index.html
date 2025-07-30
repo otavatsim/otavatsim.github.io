@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VATSIM Radar with Smaller Plane Icons (OTA only)</title>
+  <title>VATSIM Radar with OTA Icons</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -11,7 +11,6 @@
     .plane-icon {
       width: 20px;
       height: 20px;
-      background-image: url('plane.png'); /* Your plane image file */
       background-size: contain;
       background-repeat: no-repeat;
       transform-origin: center center;
@@ -35,25 +34,27 @@
     let trailPolylines = {};
 
     function updateRadar() {
-      fetch('http://localhost:3000/vatsim') // Your proxy URL
+      fetch('http://localhost:3000/vatsim') // Your proxy must be running
         .then(res => res.json())
         .then(data => {
           const activeCallsigns = {};
 
           data.pilots.forEach(pilot => {
             const { callsign, latitude, longitude, altitude, groundspeed, heading } = pilot;
-
-            if (!callsign || !callsign.includes("OTA")) return; // Only OTA callsigns
-            if (!latitude || !longitude) return; // Skip invalid
+            if (!callsign || latitude == null || longitude == null) return;
 
             const pos = [latitude, longitude];
             activeCallsigns[callsign] = true;
-
             const rotation = heading || 0;
+
+            const isOTA = callsign.includes('OTA');
+            const iconUrl = isOTA ? 'plane_ota.png' : 'plane_yellow.png';
 
             const icon = L.divIcon({
               className: '',
-              html: `<div class="plane-icon" style="transform: rotate(${rotation}deg);"></div>`,
+              html: `<div class="plane-icon" style="
+                background-image: url('${iconUrl}');
+                transform: rotate(${rotation}deg);"></div>`,
               iconSize: [20, 20],
               iconAnchor: [10, 10]
             });
@@ -61,8 +62,7 @@
             const popupText = `${callsign}<br>Alt: ${altitude}ft<br>GS: ${groundspeed}kt`;
 
             if (!aircraftMarkers[callsign]) {
-              const marker = L.marker(pos, { icon }).addTo(map)
-                .bindPopup(popupText);
+              const marker = L.marker(pos, { icon }).addTo(map).bindPopup(popupText);
               aircraftMarkers[callsign] = marker;
               aircraftTrails[callsign] = [pos];
             } else {
