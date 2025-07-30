@@ -26,7 +26,7 @@
     let trailPolylines = {};
 
     function updateRadar() {
-      fetch('http://localhost:3000/vatsim') // ← your proxy URL
+      fetch('http://localhost:3000/vatsim') // <-- Replace with your proxy URL if different
         .then(res => res.json())
         .then(data => {
           const activeCallsigns = {};
@@ -77,7 +77,7 @@
     }
 
     updateRadar();
-    setInterval(updateRadar, 1000); // every second
+    setInterval(updateRadar, 1000); // update every second
   </script>
 </body>
 </html>
